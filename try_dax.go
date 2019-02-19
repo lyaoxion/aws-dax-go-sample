@@ -3,18 +3,19 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-dax-go/dax"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"os"
-	"strings"
-	"time"
 )
 
 var services = []string{"dynamodb", "dax"}
-var commands = []string{"create-table", "put-item", "get-item", "query", "scan", "delete-table"}
+var commands = []string{"create-table", "put-item", "get-item", "query", "scan", "delete-table", "playaround"}
 
 var service = flag.String("service", "dynamodb", "dax | dynamodb")
 var region = flag.String("region", "us-west-2", "aws region")
@@ -63,8 +64,83 @@ func executeCommand(client dynamodbiface.DynamoDBAPI) error {
 		return executeScan(client)
 	case "delete-table":
 		return executeDeleteTable(client)
+	case "playaround":
+		return executePlayAround(client)
 	}
 	return fmt.Errorf("unknown command %s", *command)
+}
+
+func executePlayAround(client dynamodbiface.DynamoDBAPI) error {
+	getin := &dynamodb.GetItemInput{
+		TableName: aws.String("weatherstation_data"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"station_id": {
+				S: aws.String("1"),
+			},
+			"dateandtime": {
+				S: aws.String("1"),
+			},
+		},
+	}
+	getout, err := client.GetItem(getin)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(getout)
+
+	// in := &dynamodb.TransactGetItemsInput{
+	// 	TransactItems: []*dynamodb.TransactGetItem{
+	// 		// {
+	// 		// 	Get: &dynamodb.Get{
+	// 		// 		TableName: aws.String(table),
+	// 		// 		Key: map[string]*dynamodb.AttributeValue{
+	// 		// 			"pk": {S: aws.String(fmt.Sprintf("%s_%d", keyPrefix, 0))},
+	// 		// 			"sk": {N: aws.String(fmt.Sprintf("%d", 0))},
+	// 		// 		},
+	// 		// 	},
+	// 		// },
+	// 		{
+	// 			Get: &dynamodb.Get{
+	// 				TableName: aws.String("BlobNumberKeyGeneralTestTable"),
+	// 				Key: map[string]*dynamodb.AttributeValue{
+	// 					"dummy123": {
+	// 						S: aws.String("dummy123"),
+	// 					},
+	// 				},
+	// 			},
+	// 		}, nil,
+	// 	},
+	// }
+	// out, err := client.TransactGetItems(in)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(out)
+
+	// tgin := &dynamodb.TransactWriteItemsInput{
+	// 	TransactItems: []*dynamodb.TransactWriteItem{
+	// 		{
+	// 			ConditionCheck: &dynamodb.ConditionCheck{
+	// 				Key: map[string]*dynamodb.AttributeValue{
+	// 					"name": {S: aws.String("Airplane")},
+	// 				},
+	// 				TableName:           aws.String("my-favorite-movies-table"),
+	// 				ConditionExpression: aws.String("attribute_exists(#k)"),
+	// 				ExpressionAttributeNames: map[string]*string{
+	// 					"#k": aws.String("fans"),
+	// 				},
+	// 			},
+	// 		}, nil,
+	// 	},
+	// }
+
+	// out, err := client.TransactWriteItems(tgin)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(out)
+
+	return nil
 }
 
 func executeCreateTable(client dynamodbiface.DynamoDBAPI) error {
